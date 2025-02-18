@@ -1,38 +1,982 @@
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TextInput,
+  TouchableOpacity,
+  Image,
+  useColorScheme,
+  Platform,
+  Alert,
+} from 'react-native';
+import { MaterialIcons, Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
+// Mock data for initial vocabularies with review schedule based on forgetting curve
+const initialVocabularies = [
+  {
+    id: '1',
+    word: 'Serendipity',
+    definition: 'The occurrence and development of events by chance in a happy or beneficial way',
+    example: 'Finding your dream job while helping a stranger was pure serendipity',
+    level: 'Advanced',
+    dateAdded: '2025-02-17',
+    imagePrompt: 'magical coincidence rainbow butterfly effect',
+    reviewSchedule: [
+      { date: '2025-02-18', completed: false },
+      { date: '2025-02-19', completed: true },
+      { date: '2025-02-20', completed: false },
+      { date: '2025-02-21', completed: false },
+      { date: '2025-02-22', completed: false },
+      { date: '2025-02-23', completed: false },
+    ],
+    lastReviewed: '2024-02-18',
+    reviewHistory: ['2024-02-16', '2024-02-18'],
+  },
+  {
+    id: '2',
+    word: 'Ephemeral',
+    definition: 'Lasting for a very short time',
+    example: 'The beauty of cherry blossoms is ephemeral, lasting only a few days',
+    level: 'Intermediate',
+    dateAdded: '2024-02-16',
+    imagePrompt: 'fleeting moment cherry blossom petals in wind',
+    reviewSchedule: [
+      { date: '2024-02-17', completed: true },
+      { date: '2024-02-19', completed: false },
+      { date: '2024-02-24', completed: false },
+      { date: '2024-03-06', completed: false },
+      { date: '2024-03-26', completed: false },
+      { date: '2024-05-15', completed: false },
+    ],
+    lastReviewed: '2024-02-17',
+    reviewHistory: ['2024-02-17'],
+  },
+  // Adding more vocabularies for demonstration
+  {
+    id: '3',
+    word: 'Ubiquitous',
+    definition: 'Present, appearing, or found everywhere',
+    example: 'Mobile phones are now ubiquitous in modern society',
+    level: 'Advanced',
+    dateAdded: '2024-02-10',
+    imagePrompt: 'smartphones everywhere in daily life',
+    reviewSchedule: [
+      { date: '2024-02-11', completed: true },
+      { date: '2024-02-13', completed: true },
+      { date: '2024-02-18', completed: true },
+      { date: '2024-03-01', completed: false },
+      { date: '2024-03-21', completed: false },
+      { date: '2024-05-10', completed: false },
+    ],
+    lastReviewed: '2024-02-18',
+    reviewHistory: ['2024-02-11', '2024-02-13', '2024-02-18'],
+  },
+  {
+    id: '4',
+    word: 'Paradigm',
+    definition: 'A typical example or pattern of something; a model',
+    example: 'The company is a paradigm of successful industry-research collaboration',
+    level: 'Intermediate',
+    dateAdded: '2024-02-14',
+    imagePrompt: 'model example pattern business success',
+    reviewSchedule: [
+      { date: '2024-02-15', completed: true },
+      { date: '2024-02-17', completed: true },
+      { date: '2024-02-22', completed: false },
+      { date: '2024-03-04', completed: false },
+      { date: '2024-03-24', completed: false },
+      { date: '2024-05-13', completed: false },
+    ],
+    lastReviewed: '2024-02-17',
+    reviewHistory: ['2024-02-15', '2024-02-17'],
+  },
+  {
+    id: '5',
+    word: 'Juxtaposition',
+    definition: 'The fact of two things being seen or placed close together with contrasting effect',
+    example: 'The juxtaposition of traditional and modern elements creates a unique architectural style',
+    level: 'Advanced',
+    dateAdded: '2024-02-12',
+    imagePrompt: 'contrast old new architecture side by side',
+    reviewSchedule: [
+      { date: '2024-02-13', completed: true },
+      { date: '2024-02-15', completed: true },
+      { date: '2024-02-20', completed: false },
+      { date: '2024-03-02', completed: false },
+      { date: '2024-03-22', completed: false },
+      { date: '2024-05-11', completed: false },
+    ],
+    lastReviewed: '2024-02-15',
+    reviewHistory: ['2024-02-13', '2024-02-15'],
+  },
+  {
+    id: '6',
+    word: 'Pragmatic',
+    definition: 'Dealing with things sensibly and realistically in a way that is based on practical considerations',
+    example: 'We need a pragmatic approach to solve this problem efficiently',
+    level: 'Intermediate',
+    dateAdded: '2024-02-08',
+    imagePrompt: 'practical realistic problem solving approach',
+    reviewSchedule: [
+      { date: '2024-02-09', completed: true },
+      { date: '2024-02-11', completed: true },
+      { date: '2024-02-16', completed: true },
+      { date: '2024-02-28', completed: false },
+      { date: '2024-03-18', completed: false },
+      { date: '2024-05-07', completed: false },
+    ],
+    lastReviewed: '2024-02-16',
+    reviewHistory: ['2024-02-09', '2024-02-11', '2024-02-16'],
+  },
+  {
+    id: '7',
+    word: 'Eloquent',
+    definition: 'Fluent or persuasive in speaking or writing',
+    example: 'Her eloquent speech moved the entire audience',
+    level: 'Intermediate',
+    dateAdded: '2024-02-05',
+    imagePrompt: 'persuasive speaker podium audience captivated',
+    reviewSchedule: [
+      { date: '2024-02-06', completed: true },
+      { date: '2024-02-08', completed: true },
+      { date: '2024-02-13', completed: true },
+      { date: '2024-02-25', completed: true },
+      { date: '2024-03-15', completed: false },
+      { date: '2024-05-04', completed: false },
+    ],
+    lastReviewed: '2024-02-25',
+    reviewHistory: ['2024-02-06', '2024-02-08', '2024-02-13', '2024-02-25'],
+  },
+  {
+    id: '8',
+    word: 'Quintessential',
+    definition: 'Representing the most perfect or typical example of a quality or class',
+    example: 'The quintessential English village with its church and pub',
+    level: 'Advanced',
+    dateAdded: '2024-02-03',
+    imagePrompt: 'perfect example typical english village church pub',
+    reviewSchedule: [
+      { date: '2024-02-04', completed: true },
+      { date: '2024-02-06', completed: true },
+      { date: '2024-02-11', completed: true },
+      { date: '2024-02-23', completed: true },
+      { date: '2024-03-13', completed: false },
+      { date: '2024-05-02', completed: false },
+    ],
+    lastReviewed: '2024-02-23',
+    reviewHistory: ['2024-02-04', '2024-02-06', '2024-02-11', '2024-02-23'],
+  },
+  {
+    id: '9',
+    word: 'Benevolent',
+    definition: 'Well meaning and kindly',
+    example: 'A benevolent smile',
+    level: 'Intermediate',
+    dateAdded: '2024-02-01',
+    imagePrompt: 'kind generous person helping others warmly',
+    reviewSchedule: [
+      { date: '2024-02-02', completed: true },
+      { date: '2024-02-04', completed: true },
+      { date: '2024-02-09', completed: true },
+      { date: '2024-02-21', completed: true },
+      { date: '2024-03-11', completed: false },
+      { date: '2024-04-30', completed: false },
+    ],
+    lastReviewed: '2024-02-21',
+    reviewHistory: ['2024-02-02', '2024-02-04', '2024-02-09', '2024-02-21'],
+  },
+  {
+    id: '10',
+    word: 'Cacophony',
+    definition: 'A harsh, discordant mixture of sounds',
+    example: 'The cacophony of the city streets during rush hour',
+    level: 'Advanced',
+    dateAdded: '2024-01-30',
+    imagePrompt: 'noisy city traffic horns construction chaos',
+    reviewSchedule: [
+      { date: '2024-01-31', completed: true },
+      { date: '2024-02-02', completed: true },
+      { date: '2024-02-07', completed: true },
+      { date: '2024-02-19', completed: true },
+      { date: '2024-03-09', completed: true },
+      { date: '2024-04-28', completed: false },
+    ],
+    lastReviewed: '2024-03-09',
+    reviewHistory: ['2024-01-31', '2024-02-02', '2024-02-07', '2024-02-19', '2024-03-09'],
+  },
+  {
+    id: '11',
+    word: 'Resilient',
+    definition: 'Able to withstand or recover quickly from difficult conditions',
+    example: 'She\'s a resilient person who bounces back from adversity',
+    level: 'Beginner',
+    dateAdded: '2024-02-17',
+    imagePrompt: 'person overcoming obstacles bouncing back',
+    reviewSchedule: [
+      { date: '2024-02-18', completed: false },
+      { date: '2024-02-20', completed: false },
+      { date: '2024-02-25', completed: false },
+      { date: '2024-03-07', completed: false },
+      { date: '2024-03-27', completed: false },
+      { date: '2024-05-16', completed: false },
+    ],
+    lastReviewed: null,
+    reviewHistory: [],
+  },
+  {
+    id: '12',
+    word: 'Nostalgia',
+    definition: 'A sentimental longing for the past',
+    example: 'The film evokes nostalgia for the simpler times of childhood',
+    level: 'Beginner',
+    dateAdded: '2024-02-17',
+    imagePrompt: 'old photographs memories childhood warm glow',
+    reviewSchedule: [
+      { date: '2024-02-18', completed: false },
+      { date: '2025-02-17', completed: false },
+      { date: '2024-02-25', completed: false },
+      { date: '2024-03-07', completed: false },
+      { date: '2024-03-27', completed: false },
+      { date: '2024-05-16', completed: false },
+    ],
+    lastReviewed: null,
+    reviewHistory: [],
+  },
+];
 
-  import { NavigationContainer } from '@react-navigation/native';
-  import { createNativeStackNavigator } from '@react-navigation/native-stack';
-  import { StyleSheet } from 'react-native';
-  import { SafeAreaProvider } from "react-native-safe-area-context"
-  import { Toaster } from 'sonner-native';
-  import HomeScreen from "./screens/HomeScreen"
-  
-  const Stack = createNativeStackNavigator();
-  
-  function RootStack() {
-    return (
-      <Stack.Navigator screenOptions={{
-      headerShown: false
-    }}>
-        <Stack.Screen name="Home" component={HomeScreen} />
-      </Stack.Navigator>
-    );
-  }
-  
-  export default function App() {
-    return (
-      <SafeAreaProvider style={styles.container}>
-      <Toaster />
-        <NavigationContainer>
-          <RootStack />
-        </NavigationContainer>
-      </SafeAreaProvider>
-    );
-  }
-  
-  const styles = StyleSheet.create({
-    container: {
-      flex: 1
-    }
+const levels = ['Beginner', 'Intermediate', 'Advanced'];
+
+// Configure spacing intervals based on Ebbinghaus' forgetting curve (in days)
+const forgettingCurveIntervals = [1, 2, 5, 12, 20, 50];
+
+export default function HomeScreen() {
+  const systemColorScheme = useColorScheme();
+  const [isDarkMode, setIsDarkMode] = useState(systemColorScheme === 'dark');
+  const [vocabularies, setVocabularies] = useState(initialVocabularies);
+  const [activeTab, setActiveTab] = useState('list');
+  const [filterLevel, setFilterLevel] = useState('All');
+  const [newWord, setNewWord] = useState({
+    word: '',
+    definition: '',
+    example: '',
+    level: 'Beginner',
+    imagePrompt: ''
   });
+  const [reviewMode, setReviewMode] = useState(false);
+  const [reviewProgress, setReviewProgress] = useState({ completed: 0, total: 0 });
+
+  // Use the date from 2025-02-18 as requested
+  const today = '2025-02-18';
+  const todayDate = new Date(today); // Convert today string to Date object
+
+  // Theme settings
+  const theme = {
+    background: isDarkMode ? '#1a1a1a' : '#f8f9fa',
+    card: isDarkMode ? '#2d2d2d' : '#ffffff',
+    cardGradient: isDarkMode ? ['#2d2d2d', '#252525'] : ['#ffffff', '#f8f9fa'],
+    text: isDarkMode ? '#e1e1e1' : '#212529',
+    subtext: isDarkMode ? '#b0b0b0' : '#6c757d',
+    border: isDarkMode ? '#404040' : '#dee2e6',
+    primary: isDarkMode ? '#0a84ff' : '#007AFF',
+    secondary: isDarkMode ? '#2d2d2d' : '#e9ecef',
+    input: isDarkMode ? '#333333' : 'white',
+    success: isDarkMode ? '#50C878' : '#28a745',
+    warning: isDarkMode ? '#FFA500' : '#ffc107',
+  };
+
+  // Initialize and load data
+  useEffect(() => {
+    const loadVocabularies = async () => {
+      try {
+        const storedVocabularies = await AsyncStorage.getItem('vocabularies');
+        if (storedVocabularies) {
+          setVocabularies(JSON.parse(storedVocabularies));
+        }
+      } catch (e) {
+        console.error('Failed to load vocabularies', e);
+      }
+    };
+
+    loadVocabularies();
+  }, []);
+
+  // Calculate review progress whenever vocabularies change
+  useEffect(() => {
+    const vocabsDueToday = vocabularies.filter(vocab =>
+      vocab.reviewSchedule?.some(schedule => schedule.date === today && !schedule.completed)
+    );
+
+    const completedToday = vocabularies.filter(vocab =>
+      vocab.reviewSchedule?.some(schedule => schedule.date === today && schedule.completed)
+    );
+
+    setReviewProgress({
+      completed: completedToday.length,
+      total: vocabsDueToday.length + completedToday.length
+    });
+  }, [vocabularies]);
+
+  // Save vocabularies whenever they change
+  useEffect(() => {
+    const saveVocabularies = async () => {
+      try {
+        await AsyncStorage.setItem('vocabularies', JSON.stringify(vocabularies));
+      } catch (e) {
+        console.error('Failed to save vocabularies', e);
+      }
+    };
+
+    saveVocabularies();
+  }, [vocabularies]);
+
+  // Get vocabularies due for review today
+  const vocabsDueForReview = vocabularies.filter(vocab =>
+    vocab.reviewSchedule?.some(schedule => schedule.date === today && !schedule.completed)
+  );
+
+  // Filter vocabularies by level
+  const filteredVocabularies = vocabularies.filter(
+    (vocab) => filterLevel === 'All' || vocab.level === filterLevel
+  );
+
+  // Calculate review due date for displayed vocabularies
+  const getNextReviewDate = (vocab) => {
+    const pendingReviews = vocab.reviewSchedule?.filter(schedule => !schedule.completed) || [];
+    if (pendingReviews.length > 0) {
+      return new Date(pendingReviews[0].date); // Convert review date string to Date object
+    }
+    return null;
+  };
+
+  // Check if vocabulary is due for review today
+  const isDueToday = (vocab) => {
+    return vocab.reviewSchedule?.some(schedule => schedule.date === today && !schedule.completed) || false;
+  };
+
+  // Mark a vocabulary as reviewed
+  const markAsReviewed = (id) => {
+    setVocabularies(prevVocabs =>
+      prevVocabs.map(vocab => {
+        if (vocab.id === id) {
+          // Update the review schedule
+          const updatedSchedule = vocab.reviewSchedule.map(schedule => {
+            if (schedule.date === today) {
+              return { ...schedule, completed: true };
+            }
+            return schedule;
+          });
+
+          return {
+            ...vocab,
+            reviewSchedule: updatedSchedule,
+            lastReviewed: today,
+            reviewHistory: [...vocab.reviewHistory || [], today]
+          };
+        }
+        return vocab;
+      })
+    );
+  };
+
+  // Create review schedule for a new vocabulary
+  const createReviewSchedule = () => {
+    const schedule = [];
+    let currentDate = new Date();
+
+    for (const interval of forgettingCurveIntervals) {
+      const reviewDate = new Date(currentDate);
+      reviewDate.setDate(reviewDate.getDate() + interval);
+      schedule.push({
+        date: reviewDate.toISOString().split('T')[0],
+        completed: false
+      });
+      currentDate = reviewDate;
+    }
+
+    return schedule;
+  };
+
+  // Add new vocabulary
+  const addVocabulary = () => {
+    if (newWord.word && newWord.definition) {
+      const newVocab = {
+        id: Date.now().toString(),
+        ...newWord,
+        dateAdded: new Date().toISOString().split('T')[0],
+        imagePrompt: newWord.imagePrompt || `conceptual visualization of ${newWord.word}`,
+        reviewSchedule: createReviewSchedule(),
+        lastReviewed: null,
+        reviewHistory: []
+      };
+      setVocabularies((prev) => [...prev, newVocab]);
+      setNewWord({
+        word: '',
+        definition: '',
+        example: '',
+        level: 'Beginner',
+        imagePrompt: ''
+      });
+      setActiveTab('list');
+    }
+  };
+
+  // Show review summary
+  const showReviewSummary = () => {
+    Alert.alert(
+      'Today\'s Review Progress',
+      `Completed: ${reviewProgress.completed} of ${reviewProgress.total}`,
+      [{ text: 'OK' }]
+    );
+  };
+
+  // VocabularyCard component
+  const VocabularyCard = ({ item, showReviewButton = false }) => {
+    const nextReviewDate = getNextReviewDate(item);
+    const isOverdue = nextReviewDate && nextReviewDate < todayDate; // Compare Date objects
+
+    const reviewStatus = isDueToday(item) ? 'Due Today' :
+      isOverdue ? 'Overdue' :
+        item.lastReviewed === today ? 'Reviewed Today' :
+          nextReviewDate ? `Next: ${nextReviewDate.toISOString().split('T')[0]}` : 'All Reviews Complete'; // Format Date for display
+
+    const statusColor = isDueToday(item) || isOverdue ? theme.warning :
+      item.lastReviewed === today ? theme.success : theme.subtext;
+
+    return (
+      <TouchableOpacity style={[styles.card, { backgroundColor: theme.card }]} activeOpacity={0.9}>
+        <LinearGradient colors={theme.cardGradient} style={styles.cardGradient}>
+          <View style={styles.cardHeader}>
+            <Text style={[styles.word, { color: theme.text }]}>{item.word}</Text>
+            <View style={[styles.levelBadge, { backgroundColor: theme.secondary }]}>
+              <Text style={[styles.levelText, { color: theme.subtext }]}>{item.level}</Text>
+            </View>
+          </View>
+
+          <Image
+            source={{
+              uri: `https://api.a0.dev/assets/image?text=${encodeURIComponent(
+                item.imagePrompt
+              )}&aspect=16:9`
+            }}
+            style={styles.wordImage}
+          />
+
+          <Text style={[styles.definition, { color: theme.text }]}>{item.definition}</Text>
+
+          {item.example && (
+            <View style={[styles.exampleContainer, { backgroundColor: theme.secondary }]}>
+              <Text style={[styles.exampleLabel, { color: theme.subtext }]}>Example:</Text>
+              <Text style={[styles.example, { color: theme.text }]}>{item.example}</Text>
+            </View>
+          )}
+
+          <View style={styles.cardFooter}>
+            <View style={styles.dateContainer}>
+              <MaterialIcons name="calendar-today" size={16} color={theme.subtext} />
+              <Text style={[styles.dateText, { color: theme.subtext }]}>Added: {item.dateAdded}</Text>
+            </View>
+
+            <View style={styles.statusContainer}>
+              <MaterialIcons name="access-time" size={16} color={statusColor} />
+              <Text style={[styles.statusText, { color: statusColor }]}>{reviewStatus}</Text>
+            </View>
+          </View>
+
+          {showReviewButton && isDueToday(item) && (
+            <TouchableOpacity
+              style={[styles.reviewButton, { backgroundColor: theme.primary }]}
+              onPress={() => markAsReviewed(item.id)}
+            >
+              <Text style={styles.reviewButtonText}>Mark as Reviewed</Text>
+            </TouchableOpacity>
+          )}
+        </LinearGradient>
+      </TouchableOpacity>
+    );
+  };
+
+  return (
+    <View style={[styles.container, { backgroundColor: theme.background }]}>
+      <View style={[styles.header, { backgroundColor: theme.card, borderBottomColor: theme.border }]}>
+        <View style={styles.headerLeft}>
+          <Text style={[styles.title, { color: theme.text }]}>Vocabulary</Text>
+          <TouchableOpacity style={styles.themeToggle} onPress={() => setIsDarkMode(!isDarkMode)}>
+            <Ionicons name={isDarkMode ? 'sunny' : 'moon'} size={20} color={theme.subtext} />
+          </TouchableOpacity>
+        </View>
+        <View style={styles.headerRight}>
+          <TouchableOpacity
+            style={[styles.progressButton, { backgroundColor: theme.secondary }]}
+            onPress={showReviewSummary}
+          >
+            <Text style={[styles.progressText, { color: theme.subtext }]}>
+              {reviewProgress.completed}/{reviewProgress.total}
+            </Text>
+          </TouchableOpacity>
+          <View style={[styles.tabs, { backgroundColor: theme.secondary }]}>
+            <TouchableOpacity
+              style={[
+                styles.tab,
+                activeTab === 'list' && styles.activeTab,
+                { backgroundColor: activeTab === 'list' ? theme.card : 'transparent' }
+              ]}
+              onPress={() => {
+                setActiveTab('list');
+                setReviewMode(false);
+              }}
+            >
+              <Ionicons name="list" size={20} color={activeTab === 'list' ? theme.primary : theme.subtext} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.tab,
+                activeTab === 'review' && styles.activeTab,
+                { backgroundColor: activeTab === 'review' ? theme.card : 'transparent' }
+              ]}
+              onPress={() => {
+                setActiveTab('review');
+                setReviewMode(true);
+              }}
+            >
+              <Ionicons name="refresh" size={20} color={activeTab === 'review' ? theme.primary : theme.subtext} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.tab,
+                activeTab === 'add' && styles.activeTab,
+                { backgroundColor: activeTab === 'add' ? theme.card : 'transparent' }
+              ]}
+              onPress={() => {
+                setActiveTab('add');
+                setReviewMode(false);
+              }}
+            >
+              <Ionicons name="add" size={20} color={activeTab === 'add' ? theme.primary : theme.subtext} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+
+      {activeTab === 'list' && (
+        <View style={styles.content}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll}>
+            <TouchableOpacity
+              style={[
+                styles.filterChip,
+                {
+                  backgroundColor: filterLevel === 'All' ? theme.primary : theme.card,
+                  borderColor: theme.border
+                }
+              ]}
+              onPress={() => setFilterLevel('All')}
+            >
+              <Text style={[styles.filterText, { color: filterLevel === 'All' ? 'white' : theme.subtext }]}>
+                All
+              </Text>
+            </TouchableOpacity>
+            {levels.map((level) => (
+              <TouchableOpacity
+                key={level}
+                style={[
+                  styles.filterChip,
+                  {
+                    backgroundColor: filterLevel === level ? theme.primary : theme.card,
+                    borderColor: theme.border
+                  }
+                ]}
+                onPress={() => setFilterLevel(level)}
+              >
+                <Text style={[styles.filterText, { color: filterLevel === level ? 'white' : theme.subtext }]}>
+                  {level}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+
+          <ScrollView style={styles.list}>
+            {filteredVocabularies.map((item) => (
+              <VocabularyCard key={item.id} item={item} />
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
+      {activeTab === 'review' && (
+        <View style={styles.content}>
+          <View style={styles.reviewHeader}>
+            <Text style={[styles.reviewTitle, { color: theme.text }]}>
+              Today's Review ({vocabsDueForReview.length} words)
+            </Text>
+          </View>
+
+          <ScrollView style={styles.list}>
+            {vocabsDueForReview.length > 0 ? (
+              vocabsDueForReview.map((item) => (
+                <VocabularyCard key={item.id} item={item} showReviewButton={true} />
+              ))
+            ) : (
+              <View style={styles.emptyReviewContainer}>
+                <Ionicons name="checkmark-circle" size={64} color={theme.success} />
+                <Text style={[styles.emptyReviewText, { color: theme.text }]}>
+                  All caught up! No words to review today.
+                </Text>
+              </View>
+            )}
+          </ScrollView>
+        </View>
+      )}
+
+      {activeTab === 'add' && (
+        <ScrollView style={styles.addForm}>
+          <TextInput
+            style={[
+              styles.input,
+              {
+                backgroundColor: theme.input,
+                borderColor: theme.border,
+                color: theme.text
+              }
+            ]}
+            placeholder="Word"
+            placeholderTextColor={theme.subtext}
+            value={newWord.word}
+            onChangeText={(text) => setNewWord((prev) => ({ ...prev, word: text }))}
+          />
+          <TextInput
+            style={[
+              styles.input,
+              styles.textArea,
+              {
+                backgroundColor: theme.input,
+                borderColor: theme.border,
+                color: theme.text
+              }
+            ]}
+            placeholder="Definition"
+            placeholderTextColor={theme.subtext}
+            multiline
+            value={newWord.definition}
+            onChangeText={(text) => setNewWord((prev) => ({ ...prev, definition: text }))}
+          />
+          <TextInput
+            style={[
+              styles.input,
+              styles.textArea,
+              {
+                backgroundColor: theme.input,
+                borderColor: theme.border,
+                color: theme.text
+              }
+            ]}
+            placeholder="Example (optional)"
+            placeholderTextColor={theme.subtext}
+            multiline
+            value={newWord.example}
+            onChangeText={(text) => setNewWord((prev) => ({ ...prev, example: text }))}
+          />
+          <TextInput
+            style={[
+              styles.input,
+              {
+                backgroundColor: theme.input,
+                borderColor: theme.border,
+                color: theme.text
+              }
+            ]}
+            placeholder="Image Prompt (optional)"
+            placeholderTextColor={theme.subtext}
+            value={newWord.imagePrompt}
+            onChangeText={(text) => setNewWord((prev) => ({ ...prev, imagePrompt: text }))}
+          />
+          <Text style={[styles.labelText, { color: theme.text }]}>Select Level:</Text>
+          <View style={styles.levelSelector}>
+            {levels.map((level) => (
+              <TouchableOpacity
+                key={level}
+                style={[
+                  styles.levelOption,
+                  {
+                    backgroundColor: theme.input,
+                    borderColor: theme.border
+                  },
+                  newWord.level === level && [styles.selectedLevel, { backgroundColor: theme.primary }]
+                ]}
+                onPress={() => setNewWord((prev) => ({ ...prev, level }))}
+              >
+                <Text
+                  style={[
+                    styles.levelOptionText,
+                    { color: theme.subtext },
+                    newWord.level === level && styles.selectedLevelText
+                  ]}
+                >
+                  {level}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <TouchableOpacity
+            style={[styles.addButton, { backgroundColor: theme.primary }]}
+            onPress={addVocabulary}
+          >
+            <Text style={styles.addButtonText}>Add Vocabulary</Text>
+          </TouchableOpacity>
+        </ScrollView>
+      )}
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1
+  },
+  header: {
+    padding: 16,
+    paddingTop: Platform.OS === 'ios' || Platform.OS === 'android' ? 48 : 16,
+    borderBottomWidth: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginRight: 8
+  },
+  themeToggle: {
+    padding: 4
+  },
+  progressButton: {
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    marginRight: 8
+  },
+  progressText: {
+    fontSize: 12,
+    fontWeight: '600'
+  },
+  tabs: {
+    flexDirection: 'row',
+    borderRadius: 6,
+    padding: 2
+  },
+  tab: {
+    paddingVertical: 4,
+    paddingHorizontal: 6,
+    marginHorizontal: 1,
+    borderRadius: 4
+  },
+  activeTab: {
+    // Optional active tab styling
+  },
+  content: {
+    flex: 1
+  },
+  filterScroll: {
+    paddingHorizontal: 12,
+    paddingVertical: 8
+  },
+  filterChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginRight: 8,
+    borderWidth: 1,
+    height: 28
+  },
+  filterText: {
+    fontSize: 13
+  },
+  list: {
+    position: 'absolute',
+    top: 45,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: 12,
+    paddingBottom: 12,
+  },
+  reviewHeader: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#dee2e6'
+  },
+  reviewTitle: {
+    fontSize: 16,
+    fontWeight: 'bold'
+  },
+  emptyReviewContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 100
+  },
+  emptyReviewText: {
+    fontSize: 16,
+    marginTop: 16,
+    textAlign: 'center'
+  },
+  card: {
+    marginTop: 8,
+    marginBottom: 8,
+    borderRadius: 12,
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8
+      },
+      android: {
+        elevation: 4
+      }
+    })
+  },
+  cardGradient: {
+    padding: 16
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12
+  },
+  word: {
+    fontSize: 20,
+    fontWeight: 'bold'
+  },
+  levelBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12
+  },
+  levelText: {
+    fontSize: 12
+  },
+  wordImage: {
+    width: '100%',
+    height: 150,
+    borderRadius: 8,
+    marginBottom: 12
+  },
+  definition: {
+    fontSize: 16,
+    lineHeight: 24,
+    marginBottom: 12
+  },
+  exampleContainer: {
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 12
+  },
+  exampleLabel: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 4
+  },
+  example: {
+    fontSize: 14,
+    fontStyle: 'italic'
+  },
+  cardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8
+  },
+  dateContainer: {
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  dateText: {
+    marginLeft: 6,
+    fontSize: 13
+  },
+  statusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  statusText: {
+    marginLeft: 6,
+    fontSize: 13,
+    fontWeight: '500'
+  },
+  reviewButton: {
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 12
+  },
+  reviewButtonText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: 'bold'
+  },
+  addForm: {
+    padding: 16
+  },
+  input: {
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    fontSize: 16,
+    borderWidth: 1
+  },
+  textArea: {
+    height: 100,
+    textAlignVertical: 'top'
+  },
+  labelText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 8
+  },
+  levelSelector: {
+    flexDirection: 'row',
+    marginBottom: 24
+  },
+  levelOption: {
+    flex: 1,
+    paddingVertical: 12,
+    borderWidth: 1,
+    marginRight: 8,
+    borderRadius: 8,
+    alignItems: 'center'
+  },
+  selectedLevel: {
+    borderColor: 'transparent'
+  },
+  levelOptionText: {
+    fontSize: 14
+  },
+  selectedLevelText: {
+    color: 'white'
+  },
+  addButton: {
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center'
+  },
+  addButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: 'bold'
+  }
+});
 
