@@ -358,7 +358,7 @@ export default function HomeScreen() {
   };
 
   // Mark a vocabulary as reviewed
-  const markAsReviewed = (id) => {
+  const markAsReviewed = (id: string) => {
     setVocabularies(prevVocabs =>
       prevVocabs.map(vocab => {
         if (vocab.id === id) {
