@@ -15,6 +15,7 @@ import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { initialVocabularies } from '@/config/initialVocabularies';
+import { addFirestoreVocabulary } from '@/hooks/addVocabulary';
 
 const levels = ['Beginner', 'Intermediate', 'Advanced'];
 
