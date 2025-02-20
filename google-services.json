@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "695437154706",
+    "project_id": "daily-vocabulary-7934b",
+    "storage_bucket": "daily-vocabulary-7934b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:695437154706:android:f2ad8bb4a089a7e4b8894b",
+        "android_client_info": {
+          "package_name": "com.lucas6028.daily_vocabulary"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBSFZ5SG_9oz4bimPRap0T1UF3FoY1aZqY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
