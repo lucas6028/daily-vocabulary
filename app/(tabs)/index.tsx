@@ -14,8 +14,9 @@ import {
 import { MaterialIcons, Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { initialVocabularies } from '@/config/initialVocabularies';
 import { addFirestoreVocabulary } from '@/hooks/addVocabulary';
+import { readFirestoreVocabulary } from '@/hooks/readVocabulary';
+import { Vocabulary } from '@/types/types';
 
 const levels = ['Beginner', 'Intermediate', 'Advanced'];
 
@@ -25,7 +26,7 @@ const forgettingCurveIntervals = [1, 2, 5, 12, 20, 50];
 export default function HomeScreen() {
   const systemColorScheme = useColorScheme();
   const [isDarkMode, setIsDarkMode] = useState(systemColorScheme === 'dark');
-  const [vocabularies, setVocabularies] = useState(initialVocabularies);
+  const [vocabularies, setVocabularies] = useState<Vocabulary[]>([]);
   const [activeTab, setActiveTab] = useState('list');
   const [filterLevel, setFilterLevel] = useState('All');
   const [newWord, setNewWord] = useState({
@@ -38,9 +39,8 @@ export default function HomeScreen() {
   const [reviewMode, setReviewMode] = useState(false);
   const [reviewProgress, setReviewProgress] = useState({ completed: 0, total: 0 });
 
-  // Use the date from 2025-02-18 as requested
-  const today = '2025-02-18';
-  const todayDate = new Date(today); // Convert today string to Date object
+  const todayDate = new Date();
+  const today = todayDate.toISOString().split('T')[0];
 
   // Theme settings
   const theme = {
@@ -61,9 +61,21 @@ export default function HomeScreen() {
   useEffect(() => {
     const loadVocabularies = async () => {
       try {
-        const storedVocabularies = await AsyncStorage.getItem('vocabularies');
+        const storedVocabularies = await readFirestoreVocabulary();
         if (storedVocabularies) {
-          setVocabularies(JSON.parse(storedVocabularies));
+          const vocabulariesData: Vocabulary[] = storedVocabularies.map((doc: any) => ({
+            id: doc.id,
+            word: doc.word,
+            definition: doc.definition,
+            example: doc.example,
+            level: doc.level,
+            imagePrompt: doc.imagePrompt,
+            dateAdded: doc.dateAdded,
+            reviewSchedule: doc.reviewSchedule,
+            lastReviewed: doc.lastReviewed,
+            reviewHistory: doc.reviewHistory,
+          }));
+          setVocabularies(vocabulariesData);
         }
       } catch (e) {
         console.error('Failed to load vocabularies', e);
@@ -113,7 +125,7 @@ export default function HomeScreen() {
   );
 
   // Calculate review due date for displayed vocabularies
-  const getNextReviewDate = (vocab) => {
+  const getNextReviewDate = (vocab: Vocabulary) => {
     const pendingReviews = vocab.reviewSchedule?.filter(schedule => !schedule.completed) || [];
     if (pendingReviews.length > 0) {
       return new Date(pendingReviews[0].date); // Convert review date string to Date object
@@ -122,7 +134,7 @@ export default function HomeScreen() {
   };
 
   // Check if vocabulary is due for review today
-  const isDueToday = (vocab) => {
+  const isDueToday = (vocab: Vocabulary) => {
     return vocab.reviewSchedule?.some(schedule => schedule.date === today && !schedule.completed) || false;
   };
 
@@ -203,7 +215,7 @@ export default function HomeScreen() {
   };
 
   // VocabularyCard component
-  const VocabularyCard = ({ item, showReviewButton = false }) => {
+  const VocabularyCard = ({ item, showReviewButton = false }: { item: Vocabulary, showReviewButton?: boolean }) => {
     const nextReviewDate = getNextReviewDate(item);
     const isOverdue = nextReviewDate && nextReviewDate < todayDate; // Compare Date objects
 
