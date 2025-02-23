@@ -15,7 +15,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { addFirestoreVocabulary } from '@/hooks/addVocabulary';
 import { readFirestoreVocabulary } from '@/hooks/readVocabulary';
 import { Vocabulary } from '@/types/types';
-import { styles } from './style';
+import { styles } from '../../styles/HomeScreenStyle';
 
 const levels = ['Beginner', 'Intermediate', 'Advanced'];
 
