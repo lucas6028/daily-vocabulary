@@ -56,6 +56,10 @@ export default function HomeScreen() {
     warning: isDarkMode ? '#FFA500' : '#ffc107',
   };
 
+  if (typeof setImmediate === 'undefined') {
+    global.setImmediate = (callback) => setTimeout(callback, 0);
+  }
+
   // Initialize and load data
   useEffect(() => {
     const loadVocabularies = async () => {
