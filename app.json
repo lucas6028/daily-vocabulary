@@ -49,6 +49,12 @@
         "projectId": "201e9e32-110e-430f-a79a-dde526bb2f1f"
       }
     },
-    "owner": "lucas6028"
+    "owner": "lucas6028",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/201e9e32-110e-430f-a79a-dde526bb2f1f"
+    }
   }
 }
