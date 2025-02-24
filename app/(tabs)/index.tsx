@@ -16,6 +16,7 @@ import { addFirestoreVocabulary } from '@/hooks/addVocabulary';
 import { readFirestoreVocabulary } from '@/hooks/readVocabulary';
 import { Vocabulary } from '@/types/types';
 import { styles } from '../../styles/HomeScreenStyle';
+import { updateFirestoreVocabulary } from '@/hooks/updateVocabulary';
 
 const levels = ['Beginner', 'Intermediate', 'Advanced'];
 
@@ -140,6 +141,7 @@ export default function HomeScreen() {
             }
             return schedule;
           });
+          updateFirestoreVocabulary(id, { ...vocab, reviewSchedule: updatedSchedule, lastReviewed: today, reviewHistory: [...vocab.reviewHistory || [], today] });
 
           return {
             ...vocab,
@@ -184,7 +186,7 @@ export default function HomeScreen() {
         reviewHistory: []
       };
       setVocabularies((prev) => [...prev, newVocab]);
-      addFirestoreVocabulary(newVocab);
+      addFirestoreVocabulary(newVocab, newVocab.id);
 
       setNewWord({
         word: '',
