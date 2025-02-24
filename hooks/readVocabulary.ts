@@ -5,9 +5,9 @@ export const readFirestoreVocabulary = async () => {
   try {
     const querySnapshot = await getDocs(collection(firestore, "vocabularies"));
     
-    querySnapshot.forEach((doc) => {
+    // querySnapshot.forEach((doc) => {
       // console.log(doc.id, " => ", doc.data().word);
-    });
+    // });
 
     console.log("Vocabulary read!");
     
